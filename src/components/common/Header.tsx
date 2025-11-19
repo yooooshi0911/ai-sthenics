@@ -1,47 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/context/AuthContext'; // 作成したuseAuthフックをインポート
-import { supabase } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Header() {
-  const { user, isLoading } = useAuth(); // ログイン情報を取得
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login'); // ログアウト後にログインページへ
-  };
+  const { user } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-gray-800 p-4 shadow-md">
-      <nav className="flex justify-center items-center gap-8">
-        {/* ログインしている時だけ表示するリンク */}
+      <nav className="flex justify-between items-center px-4 max-w-md mx-auto">
+        {/* ホームへのリンク */}
+        <Link href="/" className="text-xl font-bold text-white hover:text-blue-400 transition-colors">
+          AI-STHENICS
+        </Link>
+
         {user && (
-          <>
-            <Link href="/" className="text-gray-300 hover:text-white transition-colors text-lg">
-              ホーム
+          <div className="flex items-center gap-6">
+            {/* 履歴＆ダッシュボードへの統合ボタン */}
+            <Link href="/history" className="text-gray-300 hover:text-white transition-colors text-sm flex flex-col items-center">
+              <span>📊</span>
+              <span>履歴/分析</span>
             </Link>
-            {/* ▼▼▼ ダッシュボードへのリンクを追加 ▼▼▼ */}
-            <Link href="/dashboard" className="text-gray-300 hover:text-white transition-colors text-lg">
-              ダッシュボード
+
+            {/* 設定ボタン（ログアウト含む） */}
+            <Link href="/settings" className="text-gray-300 hover:text-white transition-colors text-sm flex flex-col items-center">
+              <span>⚙️</span>
+              <span>設定</span>
             </Link>
-            <Link href="/history" className="text-gray-300 hover:text-white transition-colors text-lg">
-              履歴
-            </Link>
-          </>
+          </div>
         )}
         
-        {/* ログイン状態に応じてボタンを切り替え */}
-        {isLoading ? (
-          <div className="text-gray-400">...</div>
-        ) : user ? (
-          <button onClick={handleLogout} className="text-gray-300 hover:text-white transition-colors text-lg">
-            ログアウト
-          </button>
-        ) : (
-          <Link href="/login" className="text-gray-300 hover:text-white transition-colors text-lg">
+        {!user && (
+          <Link href="/login" className="text-gray-300 hover:text-white transition-colors">
             ログイン
           </Link>
         )}

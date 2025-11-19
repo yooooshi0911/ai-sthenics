@@ -1,15 +1,13 @@
-// HarmCategory と HarmBlockThreshold をインポート
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { createWorkoutPrompt } from '@/lib/ai/prompt';
 import type { Workout } from '@/types';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// 安全性設定を定義
 const safetySettings = [
   {
     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH, // 危険性が「高」のものだけブロック
+    threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
   },
   {
     category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
@@ -27,22 +25,24 @@ const safetySettings = [
 
 export async function POST(request: Request) {
   try {
-    const { trainingTime, history, goal, level } = (await request.json()) as {
+    const { trainingTime, history, goal, level, userRequest, personalInfo } = (await request.json()) as {
       trainingTime: number;
       history: Workout[];
       goal: string;
       level: string;
+      userRequest?: string;
+      personalInfo?: string; // ▼ 追加
     };
 
-    const prompt = createWorkoutPrompt(trainingTime, history, goal, level);
+    // prompt関数に personalInfo も渡す
+    const prompt = createWorkoutPrompt(trainingTime, history, goal, level, userRequest, personalInfo);
     
-    // AIモデルを取得する際に、安全性設定を渡す
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-pro',
       generationConfig: {
         responseMimeType: 'application/json',
       },
-      safetySettings, // ← ここで設定を適用！
+      safetySettings,
     });
 
     const result = await model.generateContent(prompt);
@@ -58,7 +58,6 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
-    // エラーの詳細をサーバーのコンソール（ターミナル）に出力
     console.error("=============== AI API ERROR START ===============");
     console.error("Error generating content:", JSON.stringify(error, null, 2));
     console.error("=============== AI API ERROR END ===============");
