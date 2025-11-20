@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import LoadingScreen from '@/components/common/LoadingScreen'; // ← インポート追加
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -76,11 +77,7 @@ export default function SettingsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="animate-pulse">読み込み中...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

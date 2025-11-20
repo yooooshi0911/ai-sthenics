@@ -1,4 +1,4 @@
-export default function Loading() {
+export default function LoadingScreen() {
   return (
     <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col items-center justify-center">
       <div className="relative flex items-center justify-center">

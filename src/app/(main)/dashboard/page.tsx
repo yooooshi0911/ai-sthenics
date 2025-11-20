@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 // ▼▼▼ WorkoutSection型をインポート ▼▼▼
 import type { WorkoutSection } from '@/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import LoadingScreen from '@/components/common/LoadingScreen'; // ← インポート追加
 
 // DBから受け取るデータの型を定義
 interface WorkoutData {
@@ -67,7 +68,7 @@ export default function DashboardPage() {
   }, [user]);
 
   if (isLoading) {
-    return <div className="text-center p-8 text-white">グラフデータを読み込み中...</div>;
+    return <LoadingScreen />;
   }
   
   // return以下のJSXは変更なし

@@ -8,6 +8,7 @@ import type { Workout, Exercise, WorkoutSection } from '@/types';
 import IntervalTimer from '@/components/features/workout/IntervalTimer';
 import QuestionModal from '@/components/features/workout/QuestionModal';
 import confetti from 'canvas-confetti';
+import LoadingScreen from '@/components/common/LoadingScreen'; 
 
 export default function WorkoutPage() {
   const { user } = useAuth();
@@ -157,7 +158,7 @@ export default function WorkoutPage() {
   };
 
   if (!workout) {
-    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">読み込み中...</div>;
+    return <LoadingScreen />;
   }
 
   return (

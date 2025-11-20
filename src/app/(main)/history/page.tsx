@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { WorkoutSection } from '@/types';
+import LoadingScreen from '@/components/common/LoadingScreen'; // ← インポート追加
+
 
 interface HistoryRecord {
   id: string;
@@ -63,8 +65,9 @@ export default function HistoryPage() {
   };
 
   if (isLoading) {
-    return <div className="text-center p-8 text-white">読み込み中...</div>;
+    return <LoadingScreen />;
   }
+  // ▲▲▲ ここまで ▲▲▲
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4">
