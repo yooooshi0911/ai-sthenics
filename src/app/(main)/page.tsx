@@ -9,7 +9,6 @@ import type { Workout } from '@/types';
 export default function HomePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [trainingTime, setTrainingTime] = useState('60');
-  // ▼▼▼ 要望入力用のStateを追加 ▼▼▼
   const [userRequest, setUserRequest] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
@@ -35,11 +34,28 @@ export default function HomePage() {
     setIsLoading(true);
     setError('');
     try {
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('goal, level').eq('id', user.id).single();
-      if (profileError) throw profileError;
-      const { data: history, error: historyError } = await supabase.from('workouts').select('date, theme').eq('user_id', user.id).order('date', { ascending: false }).limit(5);
-      if (historyError) throw historyError;
+      // ▼▼▼ 修正点1: personal_info を確実に取得 ▼▼▼
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('goal, level, personal_info') // ← ここが重要！
+        .eq('id', user.id)
+        .single();
       
+      if (profileError) throw profileError;
+      
+      // デバッグ用ログ: コンソールでデータが取れているか確認できます
+      console.log("AIに送るプロフィール:", profile);
+
+      // 履歴の取得（変更なし）
+      const { data: history, error: historyError } = await supabase
+        .from('workouts')
+        .select('date, theme')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(5);
+
+      if (historyError) throw historyError;
+
       const response = await fetch('/api/generate-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,9 +64,12 @@ export default function HomePage() {
           history: history,
           goal: profile.goal,
           level: profile.level,
-          userRequest: userRequest, // ▼ 要望も送信する
+          userRequest: userRequest,
+          // ▼▼▼ 修正点2: 取得した personal_info をAPIに渡す ▼▼▼
+          personalInfo: profile.personal_info, 
         }),
       });
+
       if (!response.ok) throw new Error('サーバーでエラーが発生しました。');
       const newWorkout: Workout = await response.json();
       localStorage.setItem('currentWorkout', JSON.stringify(newWorkout));
@@ -71,7 +90,6 @@ export default function HomePage() {
       </div>
 
       <div className="w-full max-w-sm space-y-6">
-        {/* 時間入力 */}
         <div>
           <label htmlFor="training-time" className="block text-lg font-medium text-center mb-2">
             今日のトレーニング時間は？
@@ -90,7 +108,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ▼▼▼ 要望入力エリアの追加 ▼▼▼ */}
         <div>
           <label htmlFor="user-request" className="block text-sm font-medium text-gray-400 text-center mb-2">
             今日の要望や体調（任意）
@@ -105,7 +122,6 @@ export default function HomePage() {
           />
         </div>
         
-        {/* ボタン / ローディング */}
         <div className="h-16 flex flex-col items-center justify-center">
           {isLoading ? (
             <div className="text-center">
