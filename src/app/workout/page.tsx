@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import type { Workout, Exercise, WorkoutSection } from '@/types';
+import type { Workout, Exercise } from '@/types';
 import IntervalTimer from '@/components/features/workout/IntervalTimer';
 import QuestionModal from '@/components/features/workout/QuestionModal';
 import confetti from 'canvas-confetti';
-import LoadingScreen from '@/components/common/LoadingScreen'; 
+import LoadingScreen from '@/components/common/LoadingScreen';
 
 export default function WorkoutPage() {
   const { user } = useAuth();
@@ -19,6 +19,9 @@ export default function WorkoutPage() {
   const [alternatives, setAlternatives] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  
+  // ▼▼▼ 通知許可の状態管理 ▼▼▼
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
     const savedWorkoutJson = localStorage.getItem('currentWorkout');
@@ -27,7 +30,25 @@ export default function WorkoutPage() {
     } else {
       router.push('/');
     }
+
+    // 通知の許可状態を確認
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
   }, [router]);
+
+  // ▼▼▼ 通知許可をリクエストする関数 ▼▼▼
+  const requestNotification = async () => {
+    if (!('Notification' in window)) {
+      alert('この端末は通知に対応していません');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      alert('通知をオンにしました！インターバル終了時にお知らせします。');
+    }
+  };
 
   const findSetAndExercise = (workoutData: Workout, exerciseId: string, setId: string) => {
     for (const section of workoutData.sections) {
@@ -47,7 +68,7 @@ export default function WorkoutPage() {
     
     if (set) {
       if (value === '') {
-        (set as any)[field] = ''; // 空文字として扱うためのハック
+        (set as any)[field] = ''; 
       } else {
         (set as any)[field] = Number(value);
       }
@@ -92,7 +113,6 @@ export default function WorkoutPage() {
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
 
-    // 余韻のための待機
     await new Promise(resolve => setTimeout(resolve, 1500));
 
     const workoutToSave = {
@@ -164,6 +184,20 @@ export default function WorkoutPage() {
   return (
     <>
       <main className="min-h-screen bg-gray-950 text-white p-4 pb-32 font-sans">
+        
+        {/* ▼▼▼ 通知許可ボタン（許可されていない時だけ表示） ▼▼▼ */}
+        {notificationPermission === 'default' && (
+          <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-xl flex justify-between items-center animate-fade-in">
+            <span className="text-xs text-blue-200">🔔 インターバル通知をONにしますか？</span>
+            <button 
+              onClick={requestNotification}
+              className="text-xs bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg font-bold shadow-lg transition-transform active:scale-95"
+            >
+              許可する
+            </button>
+          </div>
+        )}
+
         <div className="mb-6 p-4 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg border border-gray-700/50">
           <h1 className="text-xl font-bold text-center text-blue-100">{workout.theme}</h1>
           <p className="text-gray-400 mt-2 text-center text-xs leading-relaxed">{workout.reason}</p>
@@ -226,7 +260,6 @@ export default function WorkoutPage() {
                           <div className="relative flex justify-center">
                             <input 
                               type="number" 
-                              // 値が空文字の場合はそのまま空文字を表示
                               value={(set.weight === 0 || set.weight === undefined || isNaN(set.weight)) && (set as any).weight !== 0 ? '' : set.weight} 
                               onChange={(e) => handleSetChange(exercise.id, set.id, 'weight', e.target.value)} 
                               className={`w-full bg-transparent text-center text-xl font-bold focus:outline-none ${set.isCompleted ? 'text-green-400' : 'text-white'}`}
@@ -288,6 +321,7 @@ export default function WorkoutPage() {
           key={timerExpiry.getTime()}
           expiryTimestamp={timerExpiry}
           onExpire={() => setTimerExpiry(null)}
+          onClose={() => setTimerExpiry(null)} // タイマーを強制キャンセル
         />
       )}
       {isModalOpen && selectedExercise && (
