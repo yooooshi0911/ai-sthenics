@@ -5,20 +5,23 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
-    const { exerciseName, question } = await request.json();
+    // language を受け取る
+    const { exerciseName, question, language } = await request.json();
 
     if (!exerciseName || !question) {
       throw new Error('種目名と質問内容が必要です。');
     }
 
     // Geminiへの指示書（プロンプト）
+     const langMap: { [key: string]: string } = { ja: "Japanese", it: "Italian", en: "English" };
+    const targetLang = langMap[language] || "Japanese";
+
     const prompt = `
-      あなたは知識豊富で親切なパーソナルトレーナーAIです。
-      ユーザーは今、「${exerciseName}」というトレーニング種目について質問しています。
-      質問内容は以下の通りです。
-      「${question}」
+      You are a knowledgeable AI personal trainer.
+      The user is asking about the exercise "${exerciseName}".
+      Question: "${question}"
       
-      この質問に対して、初心者にも分かりやすく、具体的かつ簡潔に回答してください。
+      Please answer clearly and concisely in **${targetLang}**.
     `;
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });

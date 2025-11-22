@@ -6,7 +6,8 @@ export const createWorkoutPrompt = (
   goal: string,
   level: string,
   userRequest?: string,
-  personalInfo?: string // ▼ 追加: パーソナル情報
+  personalInfo?: string,
+  language: string = 'ja' // 言語設定を受け取る
 ): string => {
   const today = new Date().toISOString().split('T')[0];
 
@@ -18,52 +19,55 @@ export const createWorkoutPrompt = (
   const requestText = userRequest ? userRequest : "特になし";
   const personalInfoText = personalInfo ? personalInfo : "特になし";
 
+  // 言語コードをAIが理解しやすい言葉に変換
+  const langMap: { [key: string]: string } = {
+    ja: "Japanese",
+    it: "Italian",
+    en: "English",
+  };
+  const targetLang = langMap[language] || "Japanese";
+
   const prompt = `
-# あなたは、利用者の安全と成長を第一に考える、世界クラスのAIパーソナルトレーナーです。
-# 以下の情報に基づき、今日の最適なトレーニングメニューを提案してください。
+# You are a world-class AI personal trainer.
+# Generate the best workout menu based on the user information below.
 
-## ユーザー情報
-- 目標: ${goal}
-- レベル: ${level}
-- **パーソナル情報・特記事項（最優先）:**
-  「${personalInfoText}」
-  **※このパーソナル情報は、常に考慮すべき前提条件です。怪我や持病に関する記述がある場合は、安全を最優先してください。**
+## User Info
+- Goal: ${goal}
+- Level: ${level}
+- **Personal Info / Special Requirements (Highest Priority):**
+  "${personalInfoText}"
+  **Consider this personal information as a prerequisite. Prioritize safety if there are any injuries or medical conditions.**
 
-- 直近のトレーニング履歴:
+- History:
 ${historyText}
 
-## 本日の制約
-- トレーニング可能時間: ${trainingTime}分
-- 今回の日付: ${today}
+## Constraints
+- Time: ${trainingTime} min
+- Date: ${today}
+- User Request: "${requestText}"
 
-## 本日のユーザー要望
-「${requestText}」
+## IMPORTANT: Output Language
+**You must output all text content (theme, reason, exercise names, section titles) in ${targetLang}.**
+(Even if the user's input is in Japanese, translate the result into ${targetLang}.)
 
-## 判断基準
-1.  **パーソナル情報の遵守:** ユーザーの持病や怪我、長期的な目標（パーソナル情報）を必ず考慮してください。
-2.  **要望の評価:** 本日の要望が、パーソナル情報や医学的常識と矛盾しない範囲で採用してください。
-3.  **出力:** 
-    -   **theme:** キャッチコピー。
-    -   **reason:** なぜそのメニューにしたのか。特にパーソナル情報を考慮した場合は、「腰への負担を避けるため〜」のように説明に含めてください。
-
-## 出力形式のルール
-- 必ず、以下のJSONスキーマに準拠したJSONオブジェクトのみを出力してください。
+## Output Format (JSON)
+- You must output only a valid JSON object based on the following schema.
 
 \`\`\`json
 {
-  "id": "一意のID文字列",
+  "id": "unique-id-string",
   "date": "${today}",
-  "theme": "文字列",
-  "reason": "文字列",
+  "theme": "String",
+  "reason": "String",
   "sections": [
     {
-      "title": "セクション名",
+      "title": "Section Title (e.g. Warm-up)",
       "exercises": [
         {
-          "id": "一意のID文字列",
-          "name": "種目名",
+          "id": "unique-id-string",
+          "name": "Exercise Name",
           "sets": [
-            { "id": "一意のID文字列", "weight": 0, "reps": 0, "isCompleted": false }
+            { "id": "unique-id-string", "weight": 0, "reps": 0, "isCompleted": false }
           ]
         }
       ]

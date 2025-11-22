@@ -25,17 +25,19 @@ const safetySettings = [
 
 export async function POST(request: Request) {
   try {
-    const { trainingTime, history, goal, level, userRequest, personalInfo } = (await request.json()) as {
+    // ▼▼▼ 修正1: language を受け取る ▼▼▼
+    const { trainingTime, history, goal, level, userRequest, personalInfo, language } = (await request.json()) as {
       trainingTime: number;
       history: Workout[];
       goal: string;
       level: string;
       userRequest?: string;
-      personalInfo?: string; // ▼ 追加
+      personalInfo?: string;
+      language?: string;
     };
 
-    // prompt関数に personalInfo も渡す
-    const prompt = createWorkoutPrompt(trainingTime, history, goal, level, userRequest, personalInfo);
+    // ▼▼▼ 修正2: createWorkoutPrompt に language を渡す ▼▼▼
+    const prompt = createWorkoutPrompt(trainingTime, history, goal, level, userRequest, personalInfo, language);
     
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-pro',

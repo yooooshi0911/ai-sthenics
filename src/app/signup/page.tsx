@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -24,31 +25,31 @@ export default function SignUpPage() {
         throw error;
       }
 
-      alert('確認メールを送信しました。メール内のリンクをクリックして登録を完了してください。');
-      router.push('/login'); // ログインページへ移動
+      alert('Confirmation email sent. Please check your inbox.'); // メッセージ英語化
+      router.push('/login');
     } catch (err: any) {
-      setError(err.message || 'サインアップ中にエラーが発生しました。');
+      setError(err.message || 'An error occurred during signup.');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg">
-        <h1 className="text-2xl font-bold text-center">新規登録</h1>
+        <h1 className="text-2xl font-bold text-center">Sign Up</h1>
         <form onSubmit={handleSignUp} className="space-y-4">
           <div>
-            <label htmlFor="email">メールアドレス</label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded"
+              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded text-white"
             />
           </div>
           <div>
-            <label htmlFor="password">パスワード</label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -56,14 +57,20 @@ export default function SignUpPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded"
+              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded text-white"
             />
           </div>
-          <button type="submit" className="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold">
-            登録する
+          <button type="submit" className="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold text-white">
+            Create Account
           </button>
           {error && <p className="text-red-500 text-center">{error}</p>}
         </form>
+        <p className="text-center text-sm text-gray-400">
+          Already have an account?{' '}
+          <Link href="/login" className="text-blue-400 hover:underline">
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -28,50 +28,48 @@ export default function LoginPage() {
       router.push('/');
       router.refresh(); 
     } catch (err: any) {
-      setError('メールアドレスまたはパスワードが間違っています。');
+      setError('Invalid email or password.'); // エラーメッセージも英語化
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg">
-        <h1 className="text-2xl font-bold text-center">ログイン</h1>
+        <h1 className="text-2xl font-bold text-center">Login</h1>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label htmlFor="email">メールアドレス</label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded"
+              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded text-white"
             />
           </div>
           <div>
-            <label htmlFor="password">パスワード</label>
+            <label htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded"
+              className="w-full mt-1 p-2 bg-gray-700 border border-gray-600 rounded text-white"
             />
           </div>
-          <button type="submit" className="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold">
-            ログイン
+          <button type="submit" className="w-full p-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold text-white">
+            Sign In
           </button>
           {error && <p className="text-red-500 text-center">{error}</p>}
         </form>
-        {/* ▼▼▼ この部分が正しいか確認 ▼▼▼ */}
-        <p className="text-center">
-          アカウントをお持ちでないですか？{' '}
+        <p className="text-center text-sm text-gray-400">
+          Don't have an account?{' '}
           <Link href="/signup" className="text-blue-400 hover:underline">
-            新規登録
+            Sign Up
           </Link>
         </p>
-        {/* ▲▲▲ ここまで ▲▲▲ */}
       </div>
     </div>
   );

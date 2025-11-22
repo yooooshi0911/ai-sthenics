@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import type { Workout } from '@/types';
+import { useLanguage } from '@/context/LanguageContext'; // ← グローバル設定を使う
 
 export default function HomePage() {
   const { user, isLoading: isAuthLoading } = useAuth();
+  // ▼▼▼ グローバルの言語設定を取得 ▼▼▼
+  const { language, t } = useLanguage(); 
+
   const [trainingTime, setTrainingTime] = useState('60');
   const [userRequest, setUserRequest] = useState('');
-  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -34,19 +37,14 @@ export default function HomePage() {
     setIsLoading(true);
     setError('');
     try {
-      // ▼▼▼ 修正点1: personal_info を確実に取得 ▼▼▼
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('goal, level, personal_info') // ← ここが重要！
+        .select('goal, level, personal_info')
         .eq('id', user.id)
         .single();
       
       if (profileError) throw profileError;
       
-      // デバッグ用ログ: コンソールでデータが取れているか確認できます
-      console.log("AIに送るプロフィール:", profile);
-
-      // 履歴の取得（変更なし）
       const { data: history, error: historyError } = await supabase
         .from('workouts')
         .select('date, theme')
@@ -65,8 +63,8 @@ export default function HomePage() {
           goal: profile.goal,
           level: profile.level,
           userRequest: userRequest,
-          // ▼▼▼ 修正点2: 取得した personal_info をAPIに渡す ▼▼▼
-          personalInfo: profile.personal_info, 
+          personalInfo: profile.personal_info,
+          language: language, // ▼▼▼ グローバル設定の言語を渡す ▼▼▼
         }),
       });
 
@@ -75,7 +73,7 @@ export default function HomePage() {
       localStorage.setItem('currentWorkout', JSON.stringify(newWorkout));
       router.push('/workout');
     } catch (err: any) {
-      setError(err.message || 'メニューの作成に失敗しました。');
+      setError(err.message || 'Error creating menu.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -86,13 +84,13 @@ export default function HomePage() {
     <main className="fixed inset-0 w-full h-full bg-gray-900 text-white flex flex-col items-center justify-center p-4 overflow-hidden touch-none">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold">AI-STHENICS</h1>
-        <p className="text-gray-400 mt-2">あなたのポケットにAIトレーナーを</p>
+        <p className="text-gray-400 mt-2">Your Personal AI Trainer</p>
       </div>
 
       <div className="w-full max-w-sm space-y-6">
         <div>
           <label htmlFor="training-time" className="block text-lg font-medium text-center mb-2">
-            今日のトレーニング時間は？
+            {t.training_time_q}
           </label>
           <div className="flex items-center">
             <input
@@ -104,19 +102,19 @@ export default function HomePage() {
               step="15"
               disabled={isLoading}
             />
-            <span className="bg-gray-700 text-2xl p-4 rounded-r-md">分</span>
+            <span className="bg-gray-700 text-2xl p-4 rounded-r-md">{t.minutes}</span>
           </div>
         </div>
 
         <div>
           <label htmlFor="user-request" className="block text-sm font-medium text-gray-400 text-center mb-2">
-            今日の要望や体調（任意）
+            {t.request_q}
           </label>
           <textarea
             id="user-request"
             value={userRequest}
             onChange={(e) => setUserRequest(e.target.value)}
-            placeholder="例: 肩が痛いので無理せず、腹筋を多めにしたい"
+            placeholder="..."
             className="w-full bg-gray-800 border border-gray-700 text-white rounded-md p-3 focus:outline-none focus:border-blue-500 text-sm resize-none h-24"
             disabled={isLoading}
           />
@@ -130,7 +128,7 @@ export default function HomePage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p>AIがプランを調整中...</p>
+                <p>{t.generating}</p>
               </div>
             </div>
           ) : (
@@ -138,7 +136,7 @@ export default function HomePage() {
               onClick={handleCreateMenu}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 text-xl rounded-lg transition-transform transform hover:scale-105 shadow-lg"
             >
-              メニューを作成する
+              {t.create_menu}
             </button>
           )}
         </div>

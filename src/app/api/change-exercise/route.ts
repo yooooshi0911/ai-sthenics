@@ -5,18 +5,20 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
   try {
-    const { exerciseName } = await request.json();
+    const { exerciseName, language } = await request.json();
 
     if (!exerciseName) {
       throw new Error('種目名が必要です。');
     }
 
     // Geminiへの指示書（プロンプト）
+    const langMap: { [key: string]: string } = { ja: "Japanese", it: "Italian", en: "English" };
+    const targetLang = langMap[language] || "Japanese";
+
     const prompt = `
-      「${exerciseName}」という筋力トレーニング種目の代替案を3つ提案してください。
-      出力は、必ず以下の形式のJSON配列のみとしてください。他のテキストは含めないでください。
-      
-      ["代替種目A", "代替種目B", "代替種目C"]
+      Propose 3 alternative exercises for "${exerciseName}".
+      Output ONLY a JSON array of strings in **${targetLang}**.
+      Example: ["Alt 1", "Alt 2", "Alt 3"]
     `;
 
     const model = genAI.getGenerativeModel({

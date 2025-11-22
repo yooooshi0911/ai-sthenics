@@ -9,6 +9,7 @@ import IntervalTimer from '@/components/features/workout/IntervalTimer';
 import QuestionModal from '@/components/features/workout/QuestionModal';
 import confetti from 'canvas-confetti';
 import LoadingScreen from '@/components/common/LoadingScreen';
+import { useLanguage } from '@/context/LanguageContext'; // ← グローバル設定を使う
 
 export default function WorkoutPage() {
   const { user } = useAuth();
@@ -20,7 +21,9 @@ export default function WorkoutPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   
-  // ▼▼▼ 通知許可の状態管理 ▼▼▼
+  // ▼▼▼ グローバルの言語設定を取得 ▼▼▼
+  const { language, t } = useLanguage(); 
+  
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
@@ -31,22 +34,20 @@ export default function WorkoutPage() {
       router.push('/');
     }
 
-    // 通知の許可状態を確認
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
   }, [router]);
 
-  // ▼▼▼ 通知許可をリクエストする関数 ▼▼▼
   const requestNotification = async () => {
     if (!('Notification' in window)) {
-      alert('この端末は通知に対応していません');
+      alert('Not supported.');
       return;
     }
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
     if (permission === 'granted') {
-      alert('通知をオンにしました！インターバル終了時にお知らせします。');
+      alert(t.notification_q.replace('?', '!'));
     }
   };
 
@@ -97,7 +98,6 @@ export default function WorkoutPage() {
   const handleCompleteWorkout = async () => {
     if (!workout || !user) return;
 
-    // 紙吹雪アニメーション
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
@@ -127,14 +127,14 @@ export default function WorkoutPage() {
       const { error } = await supabase.from('workouts').insert(workoutToSave);
       if (error) throw error;
       localStorage.removeItem('currentWorkout');
-      alert('お疲れ様でした！今日のトレーニングを記録しました。');
+      alert('Good job!');
       router.push('/history');
     } catch (err: any) {
        if (err.message.includes('column "menu"')) {
-         alert('DBエラー: テーブル構造が古いです。');
+         alert('DB Error: Table schema mismatch.');
        } else {
          console.error(err);
-         alert('記録の保存に失敗しました。');
+         alert('Save failed.');
        }
     }
   };
@@ -146,13 +146,16 @@ export default function WorkoutPage() {
       const response = await fetch('/api/change-exercise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exerciseName: exercise.name }),
+        body: JSON.stringify({ 
+          exerciseName: exercise.name,
+          language: language // ▼▼▼ APIに言語設定を送る ▼▼▼
+        }),
       });
       if (!response.ok) throw new Error('Error');
       const data: string[] = await response.json();
       setAlternatives(data);
     } catch (error) {
-      alert('代替種目の取得に失敗しました。');
+      alert('Failed to get alternatives.');
       setIsChanging(null);
     }
   };
@@ -185,15 +188,14 @@ export default function WorkoutPage() {
     <>
       <main className="min-h-screen bg-gray-950 text-white p-4 pb-32 font-sans">
         
-        {/* ▼▼▼ 通知許可ボタン（許可されていない時だけ表示） ▼▼▼ */}
         {notificationPermission === 'default' && (
           <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-xl flex justify-between items-center animate-fade-in">
-            <span className="text-xs text-blue-200">🔔 インターバル通知をONにしますか？</span>
+            <span className="text-xs text-blue-200">{t.notification_q}</span>
             <button 
               onClick={requestNotification}
               className="text-xs bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg font-bold shadow-lg transition-transform active:scale-95"
             >
-              許可する
+              {t.allow}
             </button>
           </div>
         )}
@@ -218,17 +220,17 @@ export default function WorkoutPage() {
                       <h3 className="text-lg font-bold text-white leading-tight flex-1 mr-2">{exercise.name}</h3>
                       <div className="flex gap-3">
                         <button onClick={() => handleOpenModal(exercise)} className="text-purple-400 hover:text-purple-300 text-xs font-medium flex items-center gap-1">
-                          <span>💡</span>質問
+                          <span>💡</span>{t.ask}
                         </button>
                         <button onClick={() => handleChangeExerciseRequest(exercise)} disabled={!!isChanging} className="text-gray-400 hover:text-gray-300 text-xs font-medium flex items-center gap-1">
-                          <span>🔄</span>{isChanging === exercise.id ? '...' : '変更'}
+                          <span>🔄</span>{isChanging === exercise.id ? '...' : t.change}
                         </button>
                       </div>
                     </div>
 
                     {isChanging === exercise.id && alternatives.length > 0 && (
                       <div className="mb-4 bg-gray-800 p-3 rounded-xl border border-gray-700">
-                        <p className="text-xs text-gray-400 mb-2">代替種目の候補:</p>
+                        <p className="text-xs text-gray-400 mb-2">AI suggestions:</p>
                         <div className="flex flex-wrap gap-2">
                           {alternatives.map((altName) => (
                             <button key={altName} onClick={() => handleSelectAlternative(exercise.id, altName)} className="bg-blue-600/20 text-blue-200 hover:bg-blue-600/40 text-xs py-1 px-3 rounded-full border border-blue-500/30 transition-colors">
@@ -242,10 +244,10 @@ export default function WorkoutPage() {
                     
                     <div className="space-y-3">
                       <div className="grid grid-cols-[30px_1fr_1fr_50px] gap-2 text-xs text-gray-500 text-center mb-1 uppercase tracking-wider">
-                        <span>Set</span>
-                        <span>kg</span>
-                        <span>Reps</span>
-                        <span>Done</span>
+                        <span>{t.set}</span>
+                        <span>{t.kg}</span>
+                        <span>{t.reps}</span>
+                        <span>{t.done}</span>
                       </div>
 
                       {exercise.sets.map((set, index) => (
@@ -311,7 +313,7 @@ export default function WorkoutPage() {
             className="w-full max-w-md bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-blue-900/20 flex items-center justify-center gap-2 transition-transform active:scale-95"
           >
             <span>🎉</span>
-            <span>トレーニングを完了して記録</span>
+            <span>{t.complete_workout}</span>
           </button>
         </div>
       </main>
@@ -321,13 +323,14 @@ export default function WorkoutPage() {
           key={timerExpiry.getTime()}
           expiryTimestamp={timerExpiry}
           onExpire={() => setTimerExpiry(null)}
-          onClose={() => setTimerExpiry(null)} // タイマーを強制キャンセル
+          onClose={() => setTimerExpiry(null)}
         />
       )}
       {isModalOpen && selectedExercise && (
         <QuestionModal 
           exerciseName={selectedExercise.name}
           onClose={() => setIsModalOpen(false)}
+          language={language} // ▼▼▼ 言語設定を渡す ▼▼▼
         />
       )}
     </>

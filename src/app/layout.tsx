@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import LoadingScreen from '@/components/common/LoadingScreen';
+import { LanguageProvider } from "@/context/LanguageContext"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,7 +32,13 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {/* ▼▼▼ 追加: 言語プロバイダーで囲む ▼▼▼ */}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+          {/* ▲▲▲ ここまで ▲▲▲ */}
+        </AuthProvider>
       </body>
     </html>
   );
