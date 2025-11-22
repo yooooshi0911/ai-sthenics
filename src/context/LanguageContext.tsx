@@ -13,14 +13,14 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'ja',
+  language: 'en',
   setLanguage: () => {},
-  t: translations.ja,
+  t: translations.en,
 });
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [language, setLanguageState] = useState<Language>('ja');
+  const [language, setLanguageState] = useState<Language>('en');
 
   // ログイン時にDBから言語設定を取得
   useEffect(() => {

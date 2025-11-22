@@ -18,7 +18,7 @@ export const translations = {
     ask: "質問",
     cancel: "取消",
     done: "完了",
-    set: "set", // 英語のままでOK
+    set: "set",
     kg: "kg",
     reps: "reps",
     notification_q: "🔔 インターバル通知をONにしますか？",
@@ -38,6 +38,19 @@ export const translations = {
     beginner: "初心者",
     intermediate: "中級者",
     advanced: "上級者",
+    // ▼▼▼ 追加: モーダル用 ▼▼▼
+    ask_modal_title: "AIに質問する",
+    exercise_label: "種目",
+    question_placeholder: "例: 正しいフォームを教えて",
+    send: "送信",
+    close: "閉じる",
+    ai_thinking: "AIが考えています...",
+    answer_placeholder: "ここに回答が表示されます。",
+    ai_error: "エラーが発生しました。",
+    volume_chart_title: "トレーニングボリュームの推移",
+  total_volume: "総ボリューム",
+  chart_tooltip_date: "日付",
+  no_data_chart: "グラフを表示するには、トレーニング履歴が2件以上必要です。",
   },
   en: {
     home: "Home",
@@ -78,6 +91,19 @@ export const translations = {
     beginner: "Beginner",
     intermediate: "Intermediate",
     advanced: "Advanced",
+    // ▼▼▼ Added: Modal ▼▼▼
+    ask_modal_title: "Ask AI Coach",
+    exercise_label: "Exercise",
+    question_placeholder: "e.g. Tips for proper form?",
+    send: "Send",
+    close: "Close",
+    ai_thinking: "Thinking...",
+    answer_placeholder: "Answer will appear here.",
+    ai_error: "An error occurred.",
+     volume_chart_title: "Training Volume Progress",
+  total_volume: "Total Volume",
+  chart_tooltip_date: "Date",
+  no_data_chart: "At least 2 workout records are required to display the chart.",
   },
   it: {
     home: "Home",
@@ -118,9 +144,21 @@ export const translations = {
     beginner: "Principiante",
     intermediate: "Intermedio",
     advanced: "Avanzato",
+    // ▼▼▼ Aggiunto: Modale ▼▼▼
+    ask_modal_title: "Chiedi all'AI",
+    exercise_label: "Esercizio",
+    question_placeholder: "es. Come farlo correttamente?",
+    send: "Invia",
+    close: "Chiudi",
+    ai_thinking: "Pensando...",
+    answer_placeholder: "La risposta apparirà qui.",
+    ai_error: "Si è verificato un errore.",
+    volume_chart_title: "Progresso Volume Allenamento",
+  total_volume: "Volume Totale",
+  chart_tooltip_date: "Data",
+  no_data_chart: "Sono necessari almeno 2 allenamenti per visualizzare il grafico.",
   }
 };
 
-// 型定義
 export type Language = 'ja' | 'en' | 'it';
 export type TranslationKey = keyof typeof translations.ja;
