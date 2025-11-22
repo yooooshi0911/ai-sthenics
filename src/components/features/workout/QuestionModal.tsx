@@ -14,7 +14,7 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const modalContentRef = useRef<HTMLDivElement>(null);
+  // const modalContentRef = useRef<HTMLDivElement>(null); // ← これはもう使いません
 
   const t = translations[language];
 
@@ -43,41 +43,54 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isLoading) { // ローディング中はEnterも無効化
+    if (e.key === 'Enter' && !isLoading) {
       handleSendQuestion();
     }
   };
   
+  // 背景クリックで閉じる処理（修正版）
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   useEffect(() => {
-    // ▼▼▼ 背景スクロールの固定 ▼▼▼
-    // モーダルが開いた瞬間に body の overflow を hidden にする
-    document.body.style.overflow = 'hidden';
+    // iOS Safari対策：bodyのスクロールを物理的に止める
+    // position: fixed にして画面を固める
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalContentRef.current && !modalContentRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-
-    // クリーンアップ関数：モーダルが閉じる時に元に戻す
     return () => {
-      document.body.style.overflow = 'unset'; // スクロールを許可
-      document.removeEventListener('mousedown', handleClickOutside);
+      // 解除時に元の位置に戻す
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
     };
-  }, [onClose]);
+  }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-      
+    // ▼▼▼ 構造の大幅な見直し ▼▼▼
+    // 最外層: 画面全体を覆う固定レイヤー。タッチ操作の貫通を防ぐ
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md h-[100dvh] w-screen touch-none"
+      onClick={handleBackdropClick}
+    >
+      {/* モーダル本体: 画面高さの最大80%まで。フレックスボックスで内部レイアウトを制御 */}
       <div 
-        ref={modalContentRef} 
-        className="relative w-full max-w-lg flex flex-col max-h-[85vh] rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.2)] overflow-hidden bg-gray-900/90"
+        className="relative w-[90%] max-w-lg flex flex-col max-h-[80dvh] rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.3)] overflow-hidden bg-gray-900/95"
+        onClick={(e) => e.stopPropagation()} // 本体クリックで閉じないようにする
       >
+        {/* 背景グラデーション */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20 pointer-events-none"></div>
 
-        <div className="relative flex flex-col h-full p-6">
+        {/* コンテンツラッパー: ここで内部スクロールを許可する */}
+        <div className="relative flex flex-col h-full w-full p-6">
           
+          {/* ヘッダー (固定) */}
           <div className="flex-shrink-0 mb-6">
             <h2 className="text-xl font-bold text-white tracking-wide mb-1">{t.ask_modal_title}</h2>
             <p className="text-sm text-blue-200/70">
@@ -85,6 +98,7 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             </p>
           </div>
 
+          {/* 入力エリア (固定) */}
           <div className="flex gap-2 mb-4 flex-shrink-0">
             <input
               type="text"
@@ -92,8 +106,9 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t.question_placeholder}
-              disabled={isLoading} // ▼▼▼ ローディング中は入力不可 ▼▼▼
-              className="flex-grow bg-black/40 border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+              // touch-auto で入力欄の操作を許可
+              className="flex-grow bg-black/40 border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed touch-auto"
             />
             <button 
               onClick={handleSendQuestion} 
@@ -104,7 +119,9 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             </button>
           </div>
           
-          <div className="flex-grow overflow-y-auto custom-scrollbar rounded-xl bg-black/20 border border-white/5 p-4 min-h-[150px]">
+          {/* 回答表示エリア (スクロール可能) */}
+          {/* overflow-y-auto と touch-pan-y で縦スクロールを許可 */}
+          <div className="flex-grow overflow-y-auto custom-scrollbar rounded-xl bg-black/20 border border-white/5 p-4 min-h-[150px] touch-pan-y overscroll-contain">
             {isLoading ? (
               <div className="flex items-center justify-center h-full space-x-2 text-blue-300/70">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -133,9 +150,10 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             )}
           </div>
 
+          {/* 閉じるボタン (固定) */}
           <button 
             onClick={onClose} 
-            className="w-full mt-4 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-gray-300 text-sm font-medium transition-colors"
+            className="w-full mt-4 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-gray-300 text-sm font-medium transition-colors flex-shrink-0"
           >
             {t.close}
           </button>

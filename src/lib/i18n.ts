@@ -51,6 +51,8 @@ export const translations = {
   total_volume: "総ボリューム",
   chart_tooltip_date: "日付",
   no_data_chart: "グラフを表示するには、トレーニング履歴が2件以上必要です。",
+  training_settings_title: "トレーニング設定",
+app_settings_title: "アプリ設定",
   },
   en: {
     home: "Home",
@@ -104,6 +106,8 @@ export const translations = {
   total_volume: "Total Volume",
   chart_tooltip_date: "Date",
   no_data_chart: "At least 2 workout records are required to display the chart.",
+  training_settings_title: "Training Settings",
+app_settings_title: "App Settings",
   },
   it: {
     home: "Home",
@@ -157,6 +161,8 @@ export const translations = {
   total_volume: "Volume Totale",
   chart_tooltip_date: "Data",
   no_data_chart: "Sono necessari almeno 2 allenamenti per visualizzare il grafico.",
+  training_settings_title: "Impostazioni Allenamento",
+app_settings_title: "Impostazioni App",
   }
 };
 
