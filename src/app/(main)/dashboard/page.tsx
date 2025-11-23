@@ -6,35 +6,49 @@ import { supabase } from '@/lib/supabase/client';
 import type { WorkoutSection } from '@/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import LoadingScreen from '@/components/common/LoadingScreen';
-import { useLanguage } from '@/context/LanguageContext'; // ← グローバル設定を使う
-import { useRouter } from 'next/navigation'; // 追加
+import { useLanguage } from '@/context/LanguageContext';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+// ▼▼▼ カレンダー用ライブラリ ▼▼▼
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
+import { format, isSameDay, parseISO } from 'date-fns';
+import { ja, enUS, it } from 'date-fns/locale';
 
 interface WorkoutData {
+    id: string;
     date: string;
+    theme: string; // テーマも取得
     sections: WorkoutSection[];
 }
 
 interface ChartData {
   date: string;
-  displayDate: string; // グラフ表示用
+  displayDate: string;
   volume: number;
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { t, language } = useLanguage(); // ← 言語設定を取得
+  const { t, language } = useLanguage();
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [rawData, setRawData] = useState<WorkoutData[]>([]); // カレンダー用に元データも保持
   const [isLoading, setIsLoading] = useState(true);
+  
+  // ▼▼▼ 選択された日付 ▼▼▼
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
       setIsLoading(true);
 
+      // theme と id も取得するように変更
       const { data: workouts, error } = await supabase
         .from('workouts')
-        .select('date, sections')
+        .select('id, date, theme, sections') 
         .eq('user_id', user.id)
         .order('date', { ascending: true })
         .returns<WorkoutData[]>();
@@ -46,8 +60,9 @@ export default function DashboardPage() {
       }
 
       if (workouts) {
+        setRawData(workouts); // 元データを保存
+
         const localeMap = { ja: 'ja-JP', en: 'en-US', it: 'it-IT' };
-        
         const formattedData = workouts.map(workout => {
           let totalVolume = 0;
           workout.sections.forEach(section => {
@@ -60,7 +75,6 @@ export default function DashboardPage() {
 
           return {
             date: workout.date,
-            // 言語に合わせた日付フォーマット
             displayDate: new Date(workout.date).toLocaleDateString(localeMap[language] || 'en-US', { month: 'short', day: 'numeric' }),
             volume: totalVolume,
           };
@@ -72,13 +86,31 @@ export default function DashboardPage() {
     fetchData();
   }, [user, language]);
 
+  // ▼▼▼ カレンダー設定 ▼▼▼
+  // ユーザーの言語に合わせてカレンダーのロケールを選択
+  const dateFnsLocale = language === 'ja' ? ja : language === 'it' ? it : enUS;
+
+  // トレーニングした日を抽出（Dateオブジェクトに変換）
+  const workoutDays = rawData.map(w => parseISO(w.date));
+
+  // 選択された日のトレーニングデータを検索
+  const selectedWorkouts = rawData.filter(w => 
+    selectedDate && isSameDay(parseISO(w.date), selectedDate)
+  );
+
+  // 今月のトレーニング回数を計算
+  const currentMonthWorkouts = rawData.filter(w => {
+    const d = parseISO(w.date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 pb-24">
-      {/* ヘッダー部分 (履歴ページと統一) */}
       <div className="flex justify-center mb-6">
         <div className="bg-gray-800 p-1 rounded-lg flex">
           <button 
@@ -94,7 +126,64 @@ export default function DashboardPage() {
       </div>
 
       <h1 className="text-2xl font-bold mb-6 text-center">{t.dashboard}</h1>
-      
+
+      {/* ▼▼▼ カレンダーセクション ▼▼▼ */}
+      <div className="bg-gray-800 p-4 rounded-2xl shadow-lg border border-gray-700 mb-8">
+        <h2 className="text-lg font-semibold mb-4 text-purple-100 ml-2 border-l-4 border-purple-500 pl-3 flex justify-between items-center">
+          <span>{t.calendar_title}</span>
+          <span className="text-xs font-normal text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+            {t.monthly_count}: <strong className="text-white">{currentMonthWorkouts.length}</strong> {t.times}
+          </span>
+        </h2>
+
+        <div className="flex justify-center">
+          {/* カレンダー本体 */}
+          <style>{`
+            .rdp { --rdp-cell-size: 40px; --rdp-accent-color: #9333ea; --rdp-background-color: #3b82f6; margin: 0; }
+            .rdp-day_selected:not([disabled]) { background-color: var(--rdp-background-color); color: white; font-weight: bold; }
+            .rdp-day_today { color: #60a5fa; font-weight: bold; }
+            .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #374151; }
+          `}</style>
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={setSelectedDate}
+            modifiers={{ trained: workoutDays }}
+            modifiersStyles={{
+              trained: { 
+                border: '2px solid #9333ea', // トレーニングした日は紫の枠線
+                fontWeight: 'bold'
+              }
+            }}
+            locale={dateFnsLocale}
+            className="text-white bg-gray-900/50 p-4 rounded-xl"
+          />
+        </div>
+
+        {/* ▼ 選択した日の詳細表示エリア ▼ */}
+        <div className="mt-4 pt-4 border-t border-gray-700">
+          <p className="text-sm text-gray-400 mb-2">
+            {selectedDate ? format(selectedDate, 'yyyy/MM/dd') : ''}
+          </p>
+          
+          {selectedWorkouts.length > 0 ? (
+            <div className="space-y-2">
+              {selectedWorkouts.map(workout => (
+                <Link href={`/history/${workout.id}`} key={workout.id} className="block">
+                  <div className="bg-gray-700/50 hover:bg-gray-700 p-3 rounded-lg flex justify-between items-center transition-colors border border-gray-600">
+                    <span className="font-bold text-white">{workout.theme}</span>
+                    <span className="text-gray-400 text-sm">›</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 italic">{t.no_workout_day}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ▼▼▼ グラフセクション (変更なし) ▼▼▼ */}
       {chartData.length < 2 ? (
         <div className="text-center p-8 bg-gray-800 rounded-lg border border-gray-700 shadow-lg">
           <p className="text-gray-400">{t.no_data_chart}</p>
@@ -106,7 +195,6 @@ export default function DashboardPage() {
           </h2>
           
           <ResponsiveContainer width="100%" height={350}>
-            {/* AreaChartに変更して、よりリッチな見た目に */}
             <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
@@ -124,7 +212,7 @@ export default function DashboardPage() {
               <YAxis 
                 stroke="#9CA3AF" 
                 tick={{ fontSize: 12 }} 
-                tickFormatter={(value) => `${value / 1000}k`} // 1000単位で表示
+                tickFormatter={(value) => `${value / 1000}k`}
               />
               <Tooltip
                 contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
