@@ -9,7 +9,8 @@ import IntervalTimer from '@/components/features/workout/IntervalTimer';
 import QuestionModal from '@/components/features/workout/QuestionModal';
 import confetti from 'canvas-confetti';
 import LoadingScreen from '@/components/common/LoadingScreen';
-import { useLanguage } from '@/context/LanguageContext'; // ← グローバル設定を使う
+import { translations, Language } from '@/lib/i18n'; // ▼ 辞書をインポート
+import { useLanguage } from '@/context/LanguageContext'; // ▼ 言語設定
 
 export default function WorkoutPage() {
   const { user } = useAuth();
@@ -21,8 +22,7 @@ export default function WorkoutPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   
-  // ▼▼▼ グローバルの言語設定を取得 ▼▼▼
-  const { language, t } = useLanguage(); 
+  const { language, t } = useLanguage(); // ▼ グローバル言語設定
   
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
@@ -77,23 +77,49 @@ export default function WorkoutPage() {
     }
   };
 
+  // ▼▼▼ タイマーロジックの修正 ▼▼▼
   const handleToggleSet = (exerciseId: string, setId: string) => {
     if (!workout) return;
     const newWorkout: Workout = JSON.parse(JSON.stringify(workout));
     const { set } = findSetAndExercise(newWorkout, exerciseId, setId);
+    
     if (set) {
+      // 完了状態になる瞬間かどうかを判定
+      const isCompleting = !set.isCompleted;
+
       set.isCompleted = !set.isCompleted;
       setWorkout(newWorkout);
       localStorage.setItem('currentWorkout', JSON.stringify(newWorkout));
-      if (set.isCompleted) {
-        const time = new Date();
-        time.setSeconds(time.getSeconds() + 90);
-        setTimerExpiry(time);
+      
+      if (isCompleting) {
+        const timerSeconds = 90; // 固定値（将来的に可変に）
+
+        // ▼ 純正タイマー設定の確認
+        const useNative = localStorage.getItem('useNativeTimer') === 'true';
+        
+        // iOS判定ロジックの強化
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || 
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPad OS 13+対策
+
+        // デバッグ用アラート（原因特定のため一時的に追加）
+       //alert(`Native: ${useNative}, iOS: ${isIOS}`); 
+
+        if (useNative && isIOS) {
+          // URLスキームでショートカット起動
+          window.location.href = `shortcuts://run-shortcut?name=AI-Timer&input=${timerSeconds}`;
+          // 画面内タイマーはセットしない
+        } else {
+          // 通常の画面内タイマー
+          const time = new Date();
+          time.setSeconds(time.getSeconds() + timerSeconds);
+          setTimerExpiry(time);
+        }
       } else {
         setTimerExpiry(null);
       }
     }
   };
+  // ▲▲▲ ここまで ▲▲▲
   
   const handleCompleteWorkout = async () => {
     if (!workout || !user) return;
@@ -148,7 +174,7 @@ export default function WorkoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           exerciseName: exercise.name,
-          language: language // ▼▼▼ APIに言語設定を送る ▼▼▼
+          language: language 
         }),
       });
       if (!response.ok) throw new Error('Error');
@@ -188,7 +214,8 @@ export default function WorkoutPage() {
     <>
       <main className="min-h-screen bg-gray-950 text-white p-4 pb-32 font-sans">
         
-        {notificationPermission === 'default' && (
+        {/* 通知ボタンの表示条件：純正タイマーを使っていない場合のみ表示 */}
+        {notificationPermission === 'default' && localStorage.getItem('useNativeTimer') !== 'true' && (
           <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/50 rounded-xl flex justify-between items-center animate-fade-in">
             <span className="text-xs text-blue-200">{t.notification_q}</span>
             <button 
@@ -330,7 +357,7 @@ export default function WorkoutPage() {
         <QuestionModal 
           exerciseName={selectedExercise.name}
           onClose={() => setIsModalOpen(false)}
-          language={language} // ▼▼▼ 言語設定を渡す ▼▼▼
+          language={language}
         />
       )}
     </>

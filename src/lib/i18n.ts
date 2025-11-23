@@ -53,6 +53,10 @@ export const translations = {
   no_data_chart: "グラフを表示するには、トレーニング履歴が2件以上必要です。",
   training_settings_title: "トレーニング設定",
 app_settings_title: "アプリ設定",
+native_timer_label: "iPhone純正タイマー連携 (Beta)",
+    native_timer_desc: "完了時にショートカット経由でOS標準タイマーを起動します。（iOS専用）",
+    native_timer_warning: "⚠️ 使用するには、以下のショートカットをインストールしてください。",
+    shortcut_link_text: "ショートカットをダウンロード",
   },
   en: {
     home: "Home",
@@ -108,6 +112,10 @@ app_settings_title: "アプリ設定",
   no_data_chart: "At least 2 workout records are required to display the chart.",
   training_settings_title: "Training Settings",
 app_settings_title: "App Settings",
+native_timer_label: "iPhone Native Timer (Beta)",
+    native_timer_desc: "Launches OS timer via Shortcuts on completion. (iOS only)",
+    native_timer_warning: "⚠️ Requires installing the shortcut below.",
+    shortcut_link_text: "Download Shortcut",
   },
   it: {
     home: "Home",
@@ -163,6 +171,10 @@ app_settings_title: "App Settings",
   no_data_chart: "Sono necessari almeno 2 allenamenti per visualizzare il grafico.",
   training_settings_title: "Impostazioni Allenamento",
 app_settings_title: "Impostazioni App",
+native_timer_label: "Timer Nativo iPhone (Beta)",
+    native_timer_desc: "Avvia timer OS tramite Comandi al completamento. (Solo iOS)",
+    native_timer_warning: "⚠️ Richiede l'installazione del comando qui sotto.",
+    shortcut_link_text: "Scarica Comando",
   }
 };
 

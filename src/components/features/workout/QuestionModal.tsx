@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { translations, Language } from '@/lib/i18n';
 import ReactMarkdown from 'react-markdown';
 
@@ -14,7 +14,6 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  // const modalContentRef = useRef<HTMLDivElement>(null); // ← これはもう使いません
 
   const t = translations[language];
 
@@ -48,23 +47,21 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
     }
   };
   
-  // 背景クリックで閉じる処理（修正版）
+  // 背景クリックで閉じる
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
+  // iOS Safari対策：背景スクロール完全固定
   useEffect(() => {
-    // iOS Safari対策：bodyのスクロールを物理的に止める
-    // position: fixed にして画面を固める
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
 
     return () => {
-      // 解除時に元の位置に戻す
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
@@ -73,24 +70,18 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
   }, []);
 
   return (
-    // ▼▼▼ 構造の大幅な見直し ▼▼▼
-    // 最外層: 画面全体を覆う固定レイヤー。タッチ操作の貫通を防ぐ
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md h-[100dvh] w-screen touch-none"
       onClick={handleBackdropClick}
     >
-      {/* モーダル本体: 画面高さの最大80%まで。フレックスボックスで内部レイアウトを制御 */}
       <div 
         className="relative w-[90%] max-w-lg flex flex-col max-h-[80dvh] rounded-3xl border border-white/10 shadow-[0_0_50px_rgba(37,99,235,0.3)] overflow-hidden bg-gray-900/95"
-        onClick={(e) => e.stopPropagation()} // 本体クリックで閉じないようにする
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* 背景グラデーション */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20 pointer-events-none"></div>
 
-        {/* コンテンツラッパー: ここで内部スクロールを許可する */}
-        <div className="relative flex flex-col h-full w-full p-6">
+        <div className="relative flex flex-col h-full w-full p-6 overflow-hidden"> {/* overflow-hiddenを追加 */}
           
-          {/* ヘッダー (固定) */}
           <div className="flex-shrink-0 mb-6">
             <h2 className="text-xl font-bold text-white tracking-wide mb-1">{t.ask_modal_title}</h2>
             <p className="text-sm text-blue-200/70">
@@ -98,7 +89,6 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             </p>
           </div>
 
-          {/* 入力エリア (固定) */}
           <div className="flex gap-2 mb-4 flex-shrink-0">
             <input
               type="text"
@@ -107,7 +97,6 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
               onKeyDown={handleKeyDown}
               placeholder={t.question_placeholder}
               disabled={isLoading}
-              // touch-auto で入力欄の操作を許可
               className="flex-grow bg-black/40 border border-white/10 rounded-xl p-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed touch-auto"
             />
             <button 
@@ -119,9 +108,13 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             </button>
           </div>
           
-          {/* 回答表示エリア (スクロール可能) */}
-          {/* overflow-y-auto と touch-pan-y で縦スクロールを許可 */}
-          <div className="flex-grow overflow-y-auto custom-scrollbar rounded-xl bg-black/20 border border-white/5 p-4 min-h-[150px] touch-pan-y overscroll-contain">
+          {/* 回答表示エリア */}
+          {/* flex-1 (flex-grow) で高さを確保し、min-h-0 で縮小を許可し、overflow-y-auto でスクロールさせる */}
+          {/* touch-pan-y と stopPropagation でスクロールイベントをバブリングさせない */}
+          <div 
+            className="flex-1 min-h-0 overflow-y-auto custom-scrollbar rounded-xl bg-black/20 border border-white/5 p-4 touch-pan-y"
+            onTouchMove={(e) => e.stopPropagation()} // スクロールイベントが親に伝播してブロックされるのを防ぐ
+          >
             {isLoading ? (
               <div className="flex items-center justify-center h-full space-x-2 text-blue-300/70">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -129,7 +122,7 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
               </div>
             ) : answer ? (
-              <div className="text-gray-100 text-sm leading-relaxed space-y-3">
+              <div className="text-gray-100 text-sm leading-relaxed space-y-3 pb-4"> {/* pb-4で一番下の余白確保 */}
                 <ReactMarkdown
                   components={{
                     strong: ({node, ...props}) => <span className="font-bold text-blue-300" {...props} />,
@@ -150,7 +143,6 @@ export default function QuestionModal({ exerciseName, onClose, language }: Quest
             )}
           </div>
 
-          {/* 閉じるボタン (固定) */}
           <button 
             onClick={onClose} 
             className="w-full mt-4 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-gray-300 text-sm font-medium transition-colors flex-shrink-0"
